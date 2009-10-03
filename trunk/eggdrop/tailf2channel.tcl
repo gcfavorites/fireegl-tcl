@@ -1,3 +1,11 @@
+# tailf2channel.tcl -- by FireEgl
+
+# Description:
+# Watches a file (most likely a log file) for new lines and prints them to an IRC channel.
+# This was mainly created as an example of "how to do tailf in Tcl".
+
+# Notes:
+# fileevents don't work well on normal files.  So this is the only reliable way I know to tail a file in Tcl...
 
 namespace eval tailf2channel {
 	proc tailf2channel {channel filename {seconds {9}}} {
@@ -20,7 +28,7 @@ namespace eval tailf2channel {
 					}
 				}
 			} else {
-				# This will make it skip everything currently in the file and only show the newly added lines..
+				# This will make it skip everything currently in the file and only show the newly added lines.. (We're probably starting this script long after the file has been growing)
 				seek $fid 0 end
 			}
 			set Tails($channel,$filename) [tell $fid]
@@ -32,10 +40,9 @@ namespace eval tailf2channel {
 
 	# Kill the current timers so we can start new ones:
 	variable Timers
-	array set Timers {}
 	foreach t [array names Timers] { catch { killutimer $Timers($t) } }
 
-	# Change the next line for your channel and file you want to tail:
+	# Change the next line for your channel and file you want to tail, the time is in seconds:
 	tailf2channel #Tcl /tmp/test.log 5
 }
 
