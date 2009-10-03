@@ -32,6 +32,7 @@ namespace eval tailf2channel {
 
 	# Kill the current timers so we can start new ones:
 	variable Timers
+	array set Timers {}
 	foreach t [array names Timers] { catch { killutimer $Timers($t) } }
 
 	# Change the next line for your channel and file you want to tail:
