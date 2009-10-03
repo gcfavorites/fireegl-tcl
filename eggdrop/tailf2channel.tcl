@@ -5,7 +5,7 @@ namespace eval tailf2channel {
 		if {![catch { open $filename r } fid]} {
 			fconfigure $fid -buffering line
 			if {[info exists Tails([set channel [string tolower $channel]],$filename)]} {
-				if {$Tails(pos,$channel,$filename) >= [file size $filename]} {
+				if {$Tails($channel,$filename) >= [file size $filename]} {
 					# File shrunk since we last read from it..(log got rotated?)..Set position to the start of the file:
 					seek $fid 0 start
 				} else {
