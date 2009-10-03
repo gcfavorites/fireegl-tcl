@@ -12,10 +12,12 @@ namespace eval tailf2channel {
 					# Just read from where we left off at:
 					seek $fid $Tails($channel,$filename) start
 				}
-				while {[gets $fid line] >= 0} { if {[string length $line] > 0} {
-					#if {[string match -nocase {*PATTERN HERE*} $line]} {
-						puthelp "PRIVMSG $channel :$line" }
-					#}
+				while {[gets $fid line] >= 0} {
+					if {[string length $line] > 0} {
+						#if {[string match -nocase {*PATTERN HERE*} $line]} {
+							puthelp "PRIVMSG $channel :$line"
+						#}
+					}
 				}
 			} else {
 				# This will make it skip everything currently in the file and only show the newly added lines..
