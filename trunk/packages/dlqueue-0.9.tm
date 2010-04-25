@@ -29,7 +29,7 @@
 # $name clear
 #   Removes all items from the queue.
 
-# $name remove
+# $name remove $item/$id
 #   Removes a single item from the queue.
 #   (Specify the items id if you used an id, it's faster that way.)
 
@@ -160,7 +160,7 @@ proc ::dlqueue::option {name} {
 	# We need options?
 }
 
-# I just stuck this in here in case somebody finds it's useful..
+# I just stuck this in here in case somebody finds it useful..
 # It calculates how often this process gets CPU cycles.
 proc ::dlqueue::clockres {{testlength {1000}} {min {1}} {max {100}}} {
 	set startms [clock clicks -milliseconds]
