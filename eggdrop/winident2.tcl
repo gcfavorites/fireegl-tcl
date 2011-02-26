@@ -1,6 +1,5 @@
 # winident2.tcl v2.0 - by FireEgl@EFNet <Winident@FireEgl.Com> - February, 2011
 
-### Description:
 # Implementation of an ident server meant to be used on Windrop (Eggdrop) or Tcldrop running on Windows.
 
 namespace eval winident2 {
@@ -20,8 +19,8 @@ namespace eval winident2 {
 		return 0
 	}
 	proc Connect {idx} { control $idx Control }
-	proc Enable {} { catch { listen 113 script ::winident2::Connect } }
-	proc Disable {} { catch { listen 113 off } }
+	proc Enable {event} { catch { listen 113 script ::winident2::Connect } }
+	proc Disable {event} { catch { listen 113 off } }
 	bind evnt - connect-server ::winident2::Enable
 	bind evnt - init-server ::winident2::Disable
 	bind evnt - sigterm ::winident2::Disable
