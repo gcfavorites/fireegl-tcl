@@ -26,9 +26,13 @@ namespace eval winident2 {
 	}
 	proc Enable {args} {
 		variable Enabled
-		if {!$Enabled && ![catch { listen 113 script ::winident2::Connect pub }]} {
-			variable Enabled 1
-			putloglev d - {Identd: Enabled.}
+		if {!$Enabled} {
+			if {![catch { listen 113 script ::winident2::Connect pub }]} {
+				variable Enabled 1
+				putloglev d - {Identd: Enabled.}
+			} else {
+				putlog {Identd: Can't listen on port 113.}
+			}
 		}
 	}
 	proc Disable {args} {
