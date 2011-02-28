@@ -36,7 +36,7 @@ namespace eval winident2 {
 			fconfigure $Sock -buffering line -blocking 0
 			putloglev d - "Identd: Listening on port 113 (Tcl socket ${Sock})"
 		} else {
-			putlog {Identd: Can't listen on port 113.  (In Use?)}
+			putlog {Identd: Can't listen on port 113 (Tcl socket).  (Port in use?)}
 		}
 	}
 	proc sockListenoff {} {
@@ -51,20 +51,22 @@ namespace eval winident2 {
 	if {[info tclversion] < 8.6 && $::numversion >= 1080000} {
 		# Support for Tcl v8.5 on Eggdrop v1.8 here.
 		proc idxListen {} {
-			# If Tcl only supports IPv4 this uses Eggdrop for IPv6..
+			# If Tcl only supports IPv4 this uses Eggdrop Tcl commands for IPv6.
 			set listenaddr ${::listen-addr}
 			set ::listen-addr {::}
 			set preferipv6 ${::prefer-ipv6}
 			set ::prefer-ipv6 1
 			if {![catch { listen 113 script ::winident2::idxConnect pub }]} {
-				putloglev d - "Identd: Listening on IPv6 port 113 (Eggdrop socket)"
+				putloglev d - {Identd: Listening on IPv6 port 113 (Eggdrop socket)}
+			} else {
+				putlog {Identd: Can't listen on IPv6 port 113 (Eggdrop socket).  (Port in use?)}
 			}
 			set ::listen-addr $listenaddr
 			set ::prefer-ipv6 $preferipv6
 		}
 		proc idxListenoff {} {
 			if {![catch { listen 113 off }]} {
-				putloglev d - "Identd: No longer listening on IPv6 port 113 (Eggdrop socket)"
+				putloglev d - {Identd: No longer listening on IPv6 port 113 (Eggdrop socket)}
 			}
 		}
 		proc idxControl {idx line} {
