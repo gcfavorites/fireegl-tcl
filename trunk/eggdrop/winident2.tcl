@@ -52,6 +52,8 @@ namespace eval winident2 {
 			if {![catch { set Sock [socket -server ::winident2::sockConnect 113] } ]} {
 				fconfigure $Sock -buffering line -blocking 0
 				putloglev d - "Identd: Listening on port 113 (Tcl socket ${Sock})"
+			} else {
+				putlog {Identd: Can't listen on port 113.  (In Use?)}
 			}
 			# If Tcl only supports IPv4 this uses Eggdrop for IPv6..
 			if {[info tclversion] < 8.6 && $::numversion >= 1080000} {
