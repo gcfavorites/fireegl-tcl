@@ -14,19 +14,6 @@ namespace eval winident2 {
 			return "$line : ERROR : UNKNOWN-ERROR"
 		}
 	}
-	if {[info tclversion] < 8.6 && $::numversion >= 1080000} {
-		proc idxControl {idx line} {
-			if {$line ne {}} {
-				putdcc $idx [set response [Response $line]]
-				putlog "Identd: Replied: $response"
-			}
-			return 1
-		}
-		proc idxConnect {idx} {
-			control $idx ::winident2::idxControl
-			Disable
-		}
-	}
 	proc sockRead {sock} {
 		if {[gets $sock line] != -1} {
 			puts $sock [set response [Response $line]]
@@ -41,42 +28,87 @@ namespace eval winident2 {
 		utimer 30 [list ::winident2::sockClose $sock]
 		Disable
 	}
-	proc sockClose {sock} { if {$sock in [file channels]} { catch { close $sock } } }
-	proc Enable {args} {
-		variable Enabled
-		if {!$Enabled} {
-			# Note: This script was written for Eggdrop v1.8 running with Tcl v8.5.
-			variable Sock
-			# If Tcl supports IPv6 this uses Tcl's socket -server for everything, 
-			# otherwise it just handles IPv4..
-			if {![catch { set Sock [socket -server ::winident2::sockConnect 113] } ]} {
-				fconfigure $Sock -buffering line -blocking 0
-				putloglev d - "Identd: Listening on port 113 (Tcl socket ${Sock})"
-			} else {
-				putlog {Identd: Can't listen on port 113.  (In Use?)}
-			}
-			# If Tcl only supports IPv4 this uses Eggdrop for IPv6..
-			if {[info tclversion] < 8.6 && $::numversion >= 1080000} {
-				set listenaddr ${::listen-addr}
-				set ::listen-addr {::}
-				set preferipv6 ${::prefer-ipv6}
-				set ::prefer-ipv6 1
-				if {![catch { listen 113 script ::winident2::idxConnect pub }]} {
-					putloglev d - "Identd: Listening on IPv6 port 113 (Eggdrop socket)"
-				}
-				set ::listen-addr $listenaddr
-				set ::prefer-ipv6 $preferipv6
-			}
-			variable Enabled 1
+	proc sockListen {} {
+		variable Sock
+		# If Tcl supports IPv6 this uses Tcl's socket -server for everything, 
+		# otherwise it just handles IPv4..
+		if {![catch { set Sock [socket -server ::winident2::sockConnect 113] } ]} {
+			fconfigure $Sock -buffering line -blocking 0
+			putloglev d - "Identd: Listening on port 113 (Tcl socket ${Sock})"
+		} else {
+			putlog {Identd: Can't listen on port 113.  (In Use?)}
 		}
 	}
-	proc Disable {args} {
-		variable Enabled
-		if {$Enabled} {
-			variable Sock
-			if {$Sock in [file channels]} { catch { close $Sock } }
-			if {[info tclversion] < 8.6 && $::numversion >= 1080000} { catch { listen 113 off } }
-			variable Enabled 0
+	proc sockListenoff {} {
+		variable Sock
+		if {$Sock in [file channels]} {
+			if {![catch { close $Sock }]} {
+				putloglev d - "Identd: No longer listening on port 113 (Tcl socket ${Sock})"
+			}
+		}
+	}
+	proc sockClose {sock} { if {$sock in [file channels]} { catch { close $sock } } }
+	if {[info tclversion] < 8.6 && $::numversion >= 1080000} {
+		# Support for Tcl v8.5 on Eggdrop v1.8 here.
+		proc idxListen {} {
+			# If Tcl only supports IPv4 this uses Eggdrop for IPv6..
+			set listenaddr ${::listen-addr}
+			set ::listen-addr {::}
+			set preferipv6 ${::prefer-ipv6}
+			set ::prefer-ipv6 1
+			if {![catch { listen 113 script ::winident2::idxConnect pub }]} {
+				putloglev d - "Identd: Listening on IPv6 port 113 (Eggdrop socket)"
+			}
+			set ::listen-addr $listenaddr
+			set ::prefer-ipv6 $preferipv6
+		}
+		proc idxListenoff {} {
+			if {![catch { listen 113 off }]} {
+				putloglev d - "Identd: No longer listening on IPv6 port 113 (Eggdrop socket)"
+			}
+		}
+		proc idxControl {idx line} {
+			if {$line ne {}} {
+				putdcc $idx [set response [Response $line]]
+				putlog "Identd: Replied: $response"
+			}
+			return 1
+		}
+		proc idxConnect {idx} {
+			control $idx ::winident2::idxControl
+			Disable
+		}
+		proc Enable {args} {
+			variable Enabled
+			if {!$Enabled} {
+				sockListen
+				idxListen
+				variable Enabled 1
+			}
+		}
+		proc Disable {args} {
+			variable Enabled
+			if {$Enabled} {
+				sockListenoff
+				idxListenoff
+				variable Enabled 0
+			}
+		}
+	} else {
+		# Tcl socks only.
+		proc Enable {args} {
+			variable Enabled
+			if {!$Enabled} {
+				sockListen
+				variable Enabled 1
+			}
+		}
+		proc Disable {args} {
+			variable Enabled
+			if {$Enabled} {
+				sockListenoff
+				variable Enabled 0
+			}
 		}
 	}
 	variable Enabled
