@@ -63,11 +63,13 @@ proc ::sysinfo::memory {{default {?}}} {
 	}
 }
 proc ::sysinfo::users {{default {?}}} {
-	if {[file exists /proc/consoles]} {
-		# Untested.  (Requires 2.6.38, which I'm not sure if it shows ssh type logins or not)
-		llength [split [readfile /proc/consoles] \n]
+	if {![catch { exec who -q } who] && [regexp {# users=(\d)} $who -> count]} {
+		return $count
 	} elseif {![catch { llength [split [exec w -h] \n] } count]} {
 		return $count
+	} elseif {[file exists /proc/consoles]} {
+		# Note: I think /proc/consoles only shows local logins..
+		llength [split [readfile /proc/consoles] \n]
 	} else {
 		return $default
 	}
