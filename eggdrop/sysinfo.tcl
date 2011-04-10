@@ -1,6 +1,6 @@
 #! /usr/bin/tclsh
 
-# sysinfo.tcl - by FireEgl - March 2011
+# sysinfo.tcl - by FireEgl - April 2011
 
 # pub command !sysinfo reads some files in /proc/ and /etc/ and returns some basic system info.
 
@@ -9,9 +9,9 @@ namespace eval ::sysinfo {
 	# Shows everything:
 	variable format {Hostname: [hostname], Distribution: [distrib], OS: $::tcl_platform(os) $::tcl_platform(osVersion)/$::tcl_platform(machine), CPU: [cpu], Load Average: [loadavg], Processes: [processes], Memory Used: [memory], Uptime: [uptime], Users: [users].}
 	# For grsecurity with proc restrictions enabled:
-	#variable format {Hostname: [info hostname], Distribution: [distrib], OS: $::tcl_platform(os) $::tcl_platform(osVersion)/$::tcl_platform(machine), CPU: [cpu], Load Average: [loadavg], Memory Used: [memory], Uptime: [uptime].}
+	#variable format {Hostname: [info hostname], Distribution: [distrib], OS: $::tcl_platform(os) $::tcl_platform(osVersion)/$::tcl_platform(machine), CPU: [cpu], Load Average: [loadavg], Processes: [processes], Memory Used: [memory], Uptime: [uptime].}
 	# For Cygwin:
-	#variable format {Hostname: [info hostname], OS: $::tcl_platform(os) $::tcl_platform(osVersion)/$::tcl_platform(machine), CPU: [cpu], Uptime: [uptime].}
+	#variable format {Hostname: [info hostname], OS: $::tcl_platform(os) $::tcl_platform(osVersion)/$::tcl_platform(machine), CPU: [cpu], Processes: [processes], Uptime: [uptime].}
 }
 
 proc ::sysinfo::sysinfo {{default {Problem getting sysinfo.}}} {
@@ -72,7 +72,13 @@ proc ::sysinfo::users {{default {?}}} {
 		return $default
 	}
 }
-proc ::sysinfo::processes {{default {0}}} { llength [glob -directory /proc/ -tails -nocomplain 1* 2* 3* 4* 5* 6* 7* 8* 9*] }
+proc ::sysinfo::processes {{default {0}}} {
+	if {[set processes [lindex [readfile /proc/loadavg] 3]] ne {}} {
+		return "$processes (running/total)"
+	} else {
+		llength [glob -directory /proc/ -tails -nocomplain 1* 2* 3* 4* 5* 6* 7* 8* 9*] 
+	}
+}
 proc ::sysinfo::hostname {{default {?}}} { info hostname }
 proc ::sysinfo::os {{default {?}}} { return $::tcl_platform(os) }
 proc ::sysinfo::osver {{default {?}}} { return $::tcl_platform(osVersion) }
