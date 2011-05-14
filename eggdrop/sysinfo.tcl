@@ -7,11 +7,11 @@
 namespace eval ::sysinfo {
 	variable pubcmd !sysinfo
 	# Shows everything:
-	variable format {Hostname: [hostname], Distribution: [distrib], OS: $::tcl_platform(os) $::tcl_platform(osVersion)/$::tcl_platform(machine), CPU: [cpu], Load Average: [loadavg], Processes: [processes], Memory Used: [memory], Uptime: [uptime], Users: [users].}
+	variable format {Hostname: [hostname], Distribution: [distrib], OS: $::tcl_platform(os) $::tcl_platform(osVersion)/$::tcl_platform(machine), CPU: [cpu], Load Average: [loadavg], Processes: [processes], Memory Used: [memory], Users: [users], System Uptime: [uptime], Bot Uptime: [botuptime], On IRC: [onlinetime].}
 	# For grsecurity with proc restrictions enabled:
-	#variable format {Hostname: [info hostname], Distribution: [distrib], OS: $::tcl_platform(os) $::tcl_platform(osVersion)/$::tcl_platform(machine), CPU: [cpu], Load Average: [loadavg], Processes: [processes], Memory Used: [memory], Uptime: [uptime].}
+	#variable format {Hostname: [info hostname], Distribution: [distrib], OS: $::tcl_platform(os) $::tcl_platform(osVersion)/$::tcl_platform(machine), CPU: [cpu], Load Average: [loadavg], Processes: [processes], Memory Used: [memory], System Uptime: [uptime], Bot Uptime: [botuptime], On IRC: [onlinetime].}
 	# For Cygwin:
-	#variable format {Hostname: [info hostname], OS: $::tcl_platform(os) $::tcl_platform(osVersion)/$::tcl_platform(machine), CPU: [cpu], Processes: [processes], Uptime: [uptime].}
+	#variable format {Hostname: [info hostname], OS: $::tcl_platform(os) $::tcl_platform(osVersion)/$::tcl_platform(machine), CPU: [cpu], Processes: [processes], System Uptime: [uptime], Bot Uptime: [botuptime], On IRC: [onlinetime].}
 }
 
 proc ::sysinfo::sysinfo {{default {Problem getting sysinfo.}}} {
@@ -93,6 +93,8 @@ proc ::sysinfo::readfile {file {default {}}} {
 		return $default
 	}
 }
+proc ::sysinfo::onlinetime {{default {?}}} { secstodays [expr { [clock seconds] - ${::server-online} }] }
+proc ::sysinfo::botuptime {{default  {?}}} { secstodays [expr { [clock seconds] - $::uptime }] }
 proc ::sysinfo::secstodays {seconds args} { return "[expr { [format %.0f $seconds] / 86400 }] days" }
 
 if {[info exists ::numversion] && [llength [info commands bind]] && ![catch { bind pub - $::sysinfo::pubcmd ::sysinfo::PUB }]} {
