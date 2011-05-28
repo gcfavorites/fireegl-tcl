@@ -1,8 +1,11 @@
 #! /usr/bin/tclsh
 
-# sysinfo.tcl - by FireEgl - April 2011
+# sysinfo.tcl - by FireEgl - May 2011
 
 # pub command !sysinfo reads some files in /proc/ and /etc/ and returns some basic system info.
+
+# Note, you must .chanset #Channel +sysinfo
+# before the script will work on a channel.
 
 namespace eval ::sysinfo {
 	variable pubcmd !sysinfo
@@ -100,10 +103,11 @@ proc ::sysinfo::secstodays {seconds args} { return "[expr { [format %.0f $second
 if {[info exists ::numversion] && [llength [info commands bind]] && ![catch { bind pub - $::sysinfo::pubcmd ::sysinfo::PUB }]} {
 	# This part is for running on Eggdrop.
 	proc ::sysinfo::PUB {nick host hand chan text} {
-		if {[string trim $text] eq {} || [isbotnick $text]} {
+		if {[channel get $chan sysinfo] && ([string trim $text] eq {} || [isbotnick $text])} {
 			puthelp [encoding convertto utf-8 "PRIVMSG $chan :[sysinfo]"]
 		}
 	}
+	setudef flag sysinfo
 	putlog "sysinfo.tcl - Loaded."
 } else {
 	# This part is for running from the command-line.
