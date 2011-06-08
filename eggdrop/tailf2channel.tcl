@@ -10,7 +10,7 @@
 namespace eval tailf2channel {
 	proc tailf2channel {channel filename {seconds {9}}} {
 		if {![catch { open $filename r } fid]} {
-			fconfigure $fid -buffering line
+			fconfigure $fid -blocking 0 -buffering line
 			variable Tails
 			if {[info exists Tails([set channel [string tolower $channel]],$filename)]} {
 				if {$Tails($channel,$filename) > [file size $filename]} {
@@ -22,6 +22,7 @@ namespace eval tailf2channel {
 				}
 				while {[gets $fid line] >= 0} {
 					if {[string length $line] > 0} {
+						# Uncomment to use pattern matching on the line:
 						#if {[string match -nocase {*PATTERN HERE*} $line]} {
 							puthelp "PRIVMSG $channel :$line"
 						#}
