@@ -1,4 +1,4 @@
-# rblcheck.tcl v0.9.9-beta - by FireEgl - June 2011
+# rblcheck.tcl v0.9.10-beta - by FireEgl - June 2011
 
 ## Description:
 # When a user joins a channel this script will dnslookup their hostname to get their IP (if needed),
@@ -40,6 +40,7 @@ namespace eval ::rblcheck {
 	variable delay 0
 
 	## Set this to 1 to turn debug mode on (You'll only get a putlog in the +d (debug) level, and no ban will be set):
+	# You can alternatively .chanset #Channel +rblcheck-debug to get the same effect.
 	variable debug 0
 
 	## RBL settings:
@@ -149,7 +150,7 @@ proc ::rblcheck::CheckRBLs {ip} {	variable IPs
 		foreach r $rbls {
 			array set rblinfo $r
 			if {$rblinfo(priority) == $ipinfo(priority)} {
-				#putloglev d * "RBLCheck: ($ipinfo(priority)) Looking up $ipinfo(reverseip).$rblinfo(rbl)"
+				putloglev d * "RBLCheck: ($ipinfo(priority)) Looking up $ipinfo(reverseip).$rblinfo(rbl)"
 				set ipinfo(rbl,$rblinfo(rbl)) [concat [array get rblinfo] [list status -1]]
 				set IPs($ip) [array get ipinfo]
 				delay dnslookup "$ipinfo(reverseip).$rblinfo(rbl)" ::rblcheck::CheckResult $ip $rblinfo(rbl)
@@ -182,10 +183,12 @@ proc ::rblcheck::CheckResult {ip host status origip rbl} {	variable IPs
 			foreach code $rblinfo(codes) {
 				if {[string match $code $ip] && [incr ipinfo(weight) $rblinfo(weight)] >= $banweight} {
 					# A match was found!
-					if {!$checkidents && [string match {~*@*} $ipinfo(uhost)]} { set identinfo " Please note, that if you fix your ident you won't be banned again by this bot.  (People with idents are exempt from the RBL check) " } else { set identinfo {} }
 					if {!$debug} {
+						#if {!$checkidents && [string match {~*@*} $ipinfo(uhost)]} { set identinfo " Please note, that if you fix your ident you won't be banned again by this bot.  (People with idents are exempt from the RBL check) " } else { set identinfo {} }
 						foreach channel $ipinfo(channels) {
 							putloglev d $channel "RBLCheck ($rblinfo(rbl)): (weight: $ipinfo(weight)) $host => $ip - See: [format $rblinfo(checkurl) $ipinfo(ip)]"
+							# Avoid actually doing anything on a channel if it's set +rblcheck-debug
+							if {[channel get $channel rblcheck-debug]} { continue }
 							if {![matchban "$ipinfo(nick)!$ipinfo(uhost)" $channel] && ![isvoice $ipinfo(nick)] && ![isop $ipinfo(nick)] && ![ishalfop $ipinfo(nick)]} {
 								if {[botisop $channel] || [botishalfop $channel]} {
 									putkick $channel $ipinfo(nick) "$rblinfo(rbl) lists your IP as a $rblinfo(desc).$checkurlinfo"
@@ -202,9 +205,8 @@ proc ::rblcheck::CheckResult {ip host status origip rbl} {	variable IPs
 								}
 							}
 						}
-					} else {
-						putloglev d * "$ipinfo(nick)!$ipinfo(uhost)'s IP ($ipinfo(ip)), according to $rblinfo(rbl), is (or was) a known $rblinfo(desc). $checkurlinfo $mainurlinfo"
 					}
+					putloglev d * "$ipinfo(nick)!$ipinfo(uhost)'s IP ($ipinfo(ip)), according to $rblinfo(rbl), is (or was) a known $rblinfo(desc). $checkurlinfo $mainurlinfo"
 					# A match was found, so there's no need to continue checking any more, so do cleanup and exit:
 					unset IPs($origip)
 					# Send a note:
@@ -235,7 +237,9 @@ proc ::rblcheck::CheckResult {ip host status origip rbl} {	variable IPs
 			variable warnweight
 			if {!$debug && $ipinfo(weight) >= $warnweight} {
 				foreach channel $ipinfo(channels) {
-					puthelp "PRIVMSG @$channel :$ipinfo(nick)!$ipinfo(uhost)'s IP ($ipinfo(ip)), according to $rblinfo(rbl), is (or was) a known $rblinfo(desc). $checkurlinfo $mainurlinfo"
+					if {![channel get $channel rblcheck-debug]} {
+						puthelp "PRIVMSG @$channel :$ipinfo(nick)!$ipinfo(uhost)'s IP ($ipinfo(ip)), according to $rblinfo(rbl), is (or was) a known $rblinfo(desc). $checkurlinfo $mainurlinfo"
+					}
 				}
 			}
 			putloglev d * "RBLCheck: $origip took [expr { ([clock clicks -milliseconds] - $ipinfo(startms)) / 1000.0 }] seconds to lookup."
@@ -256,7 +260,7 @@ proc ::rblcheck::delay {args} {
 	variable IPs
 	if {[set Delay $delay] > 0 && [set lookups [array size IPs]] > 1 && [incr Delay] && [incr Delay "-$lookups"] < 0} {
 		set Delay 0 
-		#putloglev d * "RBLCheck: $lookups lookups backlogged, lowering delay to $Delay temporarily.."
+		putloglev d * "RBLCheck: $lookups lookups backlogged, lowering delay to $Delay temporarily.."
 	}
 	switch -- $Delay {
 		{0} {
@@ -278,6 +282,7 @@ namespace eval ::rblcheck {	variable rbls
 	# This sorts the rbls list by priority:
 	variable rbls [lsort -integer -index 1 $rbls]
 	setudef flag rblcheck
+	setudef flag rblcheck-debug
 	variable checkidents
 	variable IPs
 	array unset IPs *
@@ -293,7 +298,7 @@ namespace eval ::rblcheck {	variable rbls
 	}
 	variable delay
 	if {[catch { checkmodule dns }] && $delay < 1} { variable delay 1 }
-	variable version {0.9.9}
+	variable version {0.9.10}
 	putlog "rblcheck.tcl v$version by FireEgl - Loaded."
 	set version
 }
